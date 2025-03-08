@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
+from django.utils import timezone
 
 class Category(models.Model):
     """備品のカテゴリを定義するモデル"""
@@ -30,7 +33,11 @@ class Equipment(models.Model):
         ('discarded', '廃棄'),
     )
     
-    name = models.CharField(max_length=100)  # 備品名
+    name = models.CharField(
+        max_length=100,
+        blank=False, # 必須フィールド
+        validators=[MinLengthValidator(2)] # 最小文字数を2文字に設定      
+    )
     serial_number = models.CharField(max_length=100, blank=True, null=True)  # シリアル番号
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='equipment')
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, related_name='equipment')
@@ -41,6 +48,22 @@ class Equipment(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def clean(self):
+        # フィールド間の相関バリデーション
+        errors = {}
+
+        # 購入日が未来日付の場合はエラー
+        if self.purchase_date and self.purchase_date > timezone.now().date():
+            errors['purchase_date'] = '購入日は今日以前の日付である必要があります'
+
+        # ステータスが「廃棄」の場合の検証
+        if self.status == 'discarded' and not self.description:
+            errors['description'] = '廃棄理由を説明欄に記入してください'
+        
+        # エラーがあればValidationErrorを発生
+        if errors:
+            raise ValidationError(errors)
 
 class EquipmentLog(models.Model):
     """備品の貸出/返却記録を管理するモデル"""
