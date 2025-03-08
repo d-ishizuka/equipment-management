@@ -93,5 +93,9 @@ python manage.py test api.tests.CategoryModelTests.test_create_category
 
 ## frontend test
 ```
+# すべてのテストを実行
 npm test
+
+# 特定ファイルのテストを実行
+npm test -- CategoryList.test.tsx
 ```
