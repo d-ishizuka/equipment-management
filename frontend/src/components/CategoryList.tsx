@@ -16,6 +16,10 @@ const CategoryList = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 編集モード用の状態を追加
+  const [editMode, setEditMode] = useState(false);
+  const [editCategoryId, setEditCategoryId] = useState<number | null>(null);
+
   // 削除関連の状態を追加
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -49,13 +53,28 @@ const CategoryList = () => {
     setIsSubmitting(true);
     
     try {
-      const createdCategory = await categoryService.create(newCategory);
-      setCategories([...categories, createdCategory]);
+      if (editMode && editCategoryId) {
+        // 編集モードの場合は更新API呼び出し
+        const updatedCategory = await categoryService.update(editCategoryId, newCategory);
+
+        // 一覧から更新対象のカテゴリーを置き換え
+        setCategories(categories.map(cat => cat.id === editCategoryId ? updatedCategory : cat));
+
+        // 編集モードを終了
+        setEditMode(false);
+        setEditCategoryId(null);
+      } else {
+        // 新規作成の場合は作成API呼び出し
+        const createdCategory = await categoryService.create(newCategory);
+        setCategories([...categories, createdCategory]);
+      }
+
+      // フォームをリセット
       setNewCategory({ name: '', description: '' });
       setShowForm(false);
     } catch (err) {
       console.error('Error creating category:', err);
-      alert('カテゴリーの作成に失敗しました');
+      alert(editMode ? 'カテゴリーの更新に失敗しました' : 'カテゴリーの作成に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -68,6 +87,33 @@ const CategoryList = () => {
       ...newCategory,
       [name]: value
     });
+  };
+
+  // 編集モード開始
+  const startEditing = (category: Category) => {
+    if (!category.id) return;
+
+    // 削除モードをキャンセル(同時編集・削除を防止)
+    setCategoryToDelete(null);
+
+    // 編集対象のカテゴリー情報をフォームにセット
+    setNewCategory({
+      name: category.name,
+      description: category.description || ''
+    });
+
+    // 編集モードを開始
+    setEditMode(true);
+    setEditCategoryId(category.id);
+    setShowForm(true);
+  };
+
+  // 編集キャンセル
+  const cancelEditing = () => {
+    setEditMode(false);
+    setEditCategoryId(null);
+    setNewCategory({ name: '', description: '' });
+    setShowForm(false);
   };
 
   // 削除確認ダイアログを表示
@@ -126,10 +172,12 @@ const CategoryList = () => {
         </button>
       </div>
 
-      {/* カテゴリー登録フォーム */}
+      {/* カテゴリー登録/編集フォーム */}
       {showForm && (
         <div className="category-form-container">
-          <form onSubmit={handleSubmit} className="category-form">
+          <form onSubmit={handleSubmit} className="category-form" data-testid="category-form">
+            <h3>{editMode ? 'カテゴリーを編集' : 'カテゴリーを作成'}</h3>
+
             <div className="form-group">
               <label htmlFor="name">カテゴリー名 *</label>
               <input
@@ -159,7 +207,7 @@ const CategoryList = () => {
               <button 
                 type="button" 
                 className="cancel-button" 
-                onClick={() => setShowForm(false)}
+                onClick={editMode ? cancelEditing : () => setShowForm(false)}
               >
                 キャンセル
               </button>
@@ -212,16 +260,28 @@ const CategoryList = () => {
             <div key={category.id} className="category-card">
               <div className="category-card-header">
                 <h3 className="category-name">{category.name}</h3>
-                <button 
-                  className="delete-icon" 
-                  onClick={() => category.id && confirmDelete(category.id)}
-                  aria-label="カテゴリーを削除"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
-                    <path fill="none" d="M0 0h24v24H0z"/>
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                  </svg>
-                </button>
+                <div className="card-actions">
+                  <button
+                    className="edit-icon"
+                    onClick={() => category.id && startEditing(category)}
+                    aria-label="カテゴリーを編集"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                      <path fill="none" d="M0 0h24v24H0z"/>
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                  </button>
+                  <button 
+                    className="delete-icon" 
+                    onClick={() => category.id && confirmDelete(category.id)}
+                    aria-label="カテゴリーを削除"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                      <path fill="none" d="M0 0h24v24H0z"/>
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               {category.description && (
                 <p className="category-description">{category.description}</p>
