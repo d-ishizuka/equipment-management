@@ -99,3 +99,12 @@ npm test
 # 特定ファイルのテストを実行
 npm test -- CategoryList.test.tsx
 ```
+
+## backendスキーマの更新方法
+```
+# models.pyを編集後
+
+python manage.py makemigrations  # 変更を検出し新しいマイグレーションファイルを作成
+
+python manage.py migrate         # 変更をDBに適用
+```
