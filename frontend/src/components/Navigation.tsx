@@ -16,6 +16,11 @@ const Navigation = () => {
             場所
           </NavLink>
         </li>
+        <li>
+          <NavLink to="/equipments" className={({ isActive}) => isActive ? 'active' : ''}>
+            備品リスト
+          </NavLink>
+        </li>
       </ul>
     </nav>
   )
