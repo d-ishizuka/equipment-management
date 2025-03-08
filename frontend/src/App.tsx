@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
-import CategoryList from './components/CategoryList'
-import LocationList from './components/LocationList'
+import CategoriesPage from './pages/CategoriesPage'
+import LocationsPage from './pages/LocationsPage'
 import Navigation from './components/Navigation'
 
 function App() {
@@ -12,8 +12,8 @@ function App() {
         <div className='content-container'>
           <Routes>
             <Route path='/' element={<Navigate to='/categories' />} />
-            <Route path='/categories' element={<CategoryList />} />
-            <Route path='/locations' element={<LocationList />} />
+            <Route path='/categories' element={<CategoriesPage />} />
+            <Route path='/locations' element={<LocationsPage />} />
           </Routes>
         </div>
       </div>
