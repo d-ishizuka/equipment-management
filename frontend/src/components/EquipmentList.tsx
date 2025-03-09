@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { equipmentService } from '../services/equipmentService';
-import { Equipment } from '../types/models';
+import { categoryService } from '../services/categoryService';
+import { locationService } from '../services/locationService';
+import { Equipment, Category, Location } from '../types/models';
 import './EquipmentList.css';
 
 const Equipments = () => {
@@ -13,23 +15,48 @@ const Equipments = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  // フォーム用の状態
+  const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newEquipment, setNewEquipment] = useState<Partial<Equipment>>({
+    name: '',
+    serial_number: '',
+    purchase_date: '',
+    purchase_price: 0,
+    description: '',
+    category: undefined,
+    location: undefined,
+  });
+
+  // カテゴリーと場所のリスト
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+
   // 最初のレンダリング時に備品データ一覧を取得
   useEffect(() => {
-    const fetchEquipments = async () => {
+    const fetchData = async () => {
       try {
-        const data = await equipmentService.getAll();
-        setEquipments(data);
-        setFilteredEquipments(data);
+        const [equipmentsData, categoriesData, locationsData] = await Promise.all([
+          equipmentService.getAll(),
+          categoryService.getAll(),
+          locationService.getAll()
+        ]);
+
+        setEquipments(equipmentsData);
+        setFilteredEquipments(equipmentsData);
+        console.log(equipmentsData);
+        setCategories(categoriesData);
+        setLocations(locationsData);
       } catch (err) {
-        console.error('Error fetching equipments:', err);
-        setError('備品データの取得に失敗しました');
+        console.error('Error fetching data:', err);
+        setError('データの取得に失敗しました');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEquipments();
-  }, []); // ここに空の配列を渡すことで、最初のレンダリング時のみ実行される
+    fetchData();
+  }, []);
 
   // フィルタリングと検索の適用
   useEffect(() => {    
@@ -38,7 +65,7 @@ const Equipments = () => {
     let result = [...equipments];
 
     // ステータスでフィルタリング
-    if (statusFilter && statusFilter !== 'all') {
+    if (statusFilter !== 'all') {
       result = result.filter(equipment => equipment.status === statusFilter);
     }
 
@@ -59,6 +86,76 @@ const Equipments = () => {
   // 検索入力ハンドラ
   const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+
+  // フォーム入力ハンドラ
+  // 外部キー参照のlocationとcategoryはリストから選択
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'category') {
+      const selectedCategory = categories.find(cat => cat.id === parseInt(value));
+      setNewEquipment({
+        ...newEquipment,
+        category: selectedCategory?.id,
+        category_name: selectedCategory?.name
+      });
+    } else if (name === 'location') {
+        const selectedLocation = locations.find(loc => loc.id === parseInt(value));
+        setNewEquipment({
+          ...newEquipment,
+          location: selectedLocation?.id,
+          location_name: selectedLocation?.name
+        });
+    } else {
+        setNewEquipment({
+          ...newEquipment,
+          [name]: value
+        });
+    }
+  };
+
+  // フォーム送信ハンドラ
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log("in handleSubmit")
+    e.preventDefault();
+
+    if (!newEquipment.name?.trim()) {
+      alert('備品名を入力してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 新規作成の場合は作成API呼び出し
+      console.log("!!!!!!!!!!!!!!!!!!!!")
+      console.log(newEquipment);
+      console.log("!!!!!!!!!!!!!!!!!!!!")
+      const createdEquipment = await equipmentService.create(newEquipment as Equipment);
+
+      // 備品リストを更新
+      setEquipments([...equipments, createdEquipment]);
+
+      // フォームをリセット
+      setNewEquipment({
+        name: '',
+        serial_number: '',
+        purchase_date: '',
+        purchase_price: 0,
+        description: '',
+        category: undefined,
+        location: undefined,
+      });
+
+      setShowForm(false);
+
+    } catch (err) {
+      console.error('Error creating equipment:', err);
+      alert('備品の作成に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ステータスに応じたクラス名を返す関数
@@ -107,9 +204,156 @@ const Equipments = () => {
       <div className="equipment-header">
         <h2 className="page-title">備品一覧</h2>
         <div className="equipment-actions">
-          <button className="add-button">新規登録</button>
+          <button
+            className="add-button"
+            onClick={() => setShowForm(!showForm)}
+          >
+            { showForm? 'キャンセル' : '新規登録' }
+          </button>
         </div>
       </div>
+
+      {/* 新規登録フォーム */}
+      {showForm && (
+        <div className="equipment-form-container">
+          <form onSubmit={handleSubmit} className="equipment-form"  data-testid="equipment-form">
+            <h3>備品登録</h3>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="name">備品名 *</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={newEquipment.name}
+                  onChange={handleFormChange}
+                  required
+                  placeholder="備品名を入力"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="serial_number">シリアル番号</label>
+                <input
+                  type="text"
+                  id="serial_number"
+                  name="serial_number"
+                  value={newEquipment.serial_number}
+                  onChange={handleFormChange}
+                  placeholder="シリアル番号を入力"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="purchacse_date">購入日</label>
+                <input
+                  type="date"
+                  id="purchase_date"
+                  name="purchase_date"
+                  value={newEquipment.purchase_date}
+                  onChange={handleFormChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="purchase_price">購入価格</label>
+                <input
+                  type="number"
+                  id="purchase_price"
+                  name="purchase_price"
+                  value={newEquipment.purchase_price}
+                  onChange={handleFormChange}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="category">カテゴリー</label>
+                <select
+                  id="category"
+                  name="category"
+                  value={newEquipment.category || ''}
+                  onChange={handleFormChange}
+                >
+                  <option value="">カテゴリーを選択</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="location">場所</label>
+                <select
+                  id="location"
+                  name="location"
+                  value={newEquipment.location || ''}
+                  onChange={handleFormChange}
+                >
+                  <option value="">場所を選択</option>
+                  {locations.map(location => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="status">ステータス *</label>
+              <select
+                id="status"
+                name="status"
+                value={newEquipment.status}
+                onChange={handleFormChange}
+                required
+              >
+                <option value="available">利用可能</option>
+                <option value="in_use">使用中</option>
+                <option value="maintenance">メンテナンス中</option>
+                <option value="broken">故障</option>
+                <option value="discarded">廃棄</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">説明</label>
+              <textarea
+                id="description"
+                name="description"
+                value={newEquipment.description}
+                onChange={handleFormChange}
+                placeholder="備品の説明を入力"
+                rows={3}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setShowForm(false)}
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                className="submit-button"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '送信中...' : '登録する'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* フィルターと検索UI */}
       <div className="filter-search-container">

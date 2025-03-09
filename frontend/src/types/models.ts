@@ -16,9 +16,9 @@ export interface Equipment {
   id?: number;
   name: string;
   serial_number?: string;
-  category: number;
+  category: number; // 外部キーのカテゴリーID
   category_name?: string;  // 読み取り専用フィールド
-  location: number;
+  location: number; // 外部キーの場所ID
   location_name?: string;  // 読み取り専用フィールド
   purchase_date?: string;
   purchase_price?: number;
