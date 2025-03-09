@@ -28,6 +28,10 @@ const Equipments = () => {
     location: undefined,
   });
 
+  // 削除関連の状態を追加
+  const [equipmentToDelete, setEquipmentToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // カテゴリーと場所のリスト
   const [categories, setCategories] = useState<Category[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -129,9 +133,6 @@ const Equipments = () => {
 
     try {
       // 新規作成の場合は作成API呼び出し
-      console.log("!!!!!!!!!!!!!!!!!!!!")
-      console.log(newEquipment);
-      console.log("!!!!!!!!!!!!!!!!!!!!")
       const createdEquipment = await equipmentService.create(newEquipment as Equipment);
 
       // 備品リストを更新
@@ -155,6 +156,34 @@ const Equipments = () => {
       alert('備品の作成に失敗しました');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // 削除確認を表示
+  const confirmDelete = (id: number) => {
+    // 削除するアイテムのIDをセット
+    setEquipmentToDelete(id);
+  };
+
+  // 削除処理
+  const handleDelete = async () => {
+    if (equipmentToDelete === null) return;
+    
+    setIsDeleting(true);
+    try {
+      await equipmentService.delete(equipmentToDelete);
+      
+      // 成功したらリストから削除
+      setEquipments(equipments.filter(item => item.id !== equipmentToDelete));
+      setFilteredEquipments(filteredEquipments.filter(item => item.id !== equipmentToDelete));
+      
+      // 削除モードをリセット
+      setEquipmentToDelete(null);
+    } catch (err) {
+      console.error('Error deleting equipment:', err);
+      alert('備品の削除に失敗しました');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -439,9 +468,44 @@ const Equipments = () => {
               <div className="card-actions">
                 <button className="view-button">詳細</button>
                 <button className="edit-button">編集</button>
+                <button 
+                  className="delete-button" 
+                  onClick={() => equipment.id && confirmDelete(equipment.id)}
+                >
+                  削除
+                </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 削除確認ダイアログ */}
+      {equipmentToDelete !== null && (
+        <div className="delete-dialog-overlay">
+          <div className="delete-dialog">
+            <h3>備品の削除</h3>
+            <p>
+              {equipments.find(e => e.id === equipmentToDelete)?.name} を削除してもよろしいですか？
+            </p>
+            <p className="delete-warning">この操作は取り消せません。</p>
+            <div className="delete-actions">
+              <button 
+                className="cancel-button" 
+                onClick={() => setEquipmentToDelete(null)} 
+                disabled={isDeleting}
+              >
+                キャンセル
+              </button>
+              <button 
+                className="delete-button" 
+                onClick={handleDelete} 
+                disabled={isDeleting}
+              >
+                {isDeleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
