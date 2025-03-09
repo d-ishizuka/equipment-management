@@ -5,15 +5,21 @@ import './EquipmentList.css';
 
 const Equipments = () => {
   const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [filteredEquipments, setFilteredEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // フィルタリングと検索用の状態
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // 最初のレンダリング時に備品データ一覧を取得
   useEffect(() => {
     const fetchEquipments = async () => {
       try {
         const data = await equipmentService.getAll();
-        console.log(data);
         setEquipments(data);
+        setFilteredEquipments(data);
       } catch (err) {
         console.error('Error fetching equipments:', err);
         setError('備品データの取得に失敗しました');
@@ -23,7 +29,35 @@ const Equipments = () => {
     };
 
     fetchEquipments();
-  }, []);
+  }, []); // ここに空の配列を渡すことで、最初のレンダリング時のみ実行される
+
+  // フィルタリングと検索の適用
+  useEffect(() => {
+    let result = [...equipments];
+
+    // ステータスでフィルタリング
+    if (statusFilter !== 'all') {
+      result = result.filter(equipment => equipment.status === statusFilter);
+    }
+
+    // 名前による検索
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(equipment => equipment.name.toLowerCase().includes(term) || (equipment.description && equipment.description.toLowerCase().includes(term))
+      );
+    }
+
+    setFilteredEquipments(result)}, [equipments, statusFilter, searchTerm]); // 依存配列に変数を指定することで、その変数が変更されたときに再実行される
+
+  // ステータスフィルターの変更時に呼ばれるイベントハンドラ
+  const handleStatusFileterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(e.target.value);
+  };
+
+  // 検索入力ハンドラ
+  const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   // ステータスに応じたクラス名を返す関数
   const getStatusClass = (status: string) => {
@@ -68,10 +102,61 @@ const Equipments = () => {
 
   return (
     <div className="equipment-container">
-      <h2 className="page-title">備品一覧</h2>
+      <div className="equipment-header">
+        <h2 className="page-title">備品一覧</h2>
+        <div className="equipment-actions">
+          <button className="add-button">新規登録</button>
+        </div>
+      </div>
+
+      {/* フィルターと検索UI */}
+      <div className="filter-search-container">
+        <div className="filter-container">
+          <label htmlFor="status-filter">ステータス:</label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={handleStatusFileterChange}
+            className="filter-select"
+          >
+            <option value="all">全て</option>
+            <option value="available">利用可能</option>
+            <option value="in_use">使用中</option>
+            <option value="maintenance">メンテナンス中</option>
+            <option value="broken">故障</option>
+            <option value="discarded">廃棄</option>
+          </select>
+        </div>
+
+        <div className="search-container">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchTermChange}
+            placeholder="備品名、説明で検索..."
+            className="search-input"
+          />
+          {searchTerm && (
+            <button
+              className="clear-search"
+              onClick={() => setSearchTerm('')}
+              aria-label="検索をクリア"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* フィルター結果サマリー */}
+      <div className="filter-summary">
+        {filteredEquipments.length} / {equipments.length} 件表示中
+      </div>
       
-      {equipments.length === 0 ? (
-        <div className="empty-message">登録されている備品がありません</div>
+      {filteredEquipments.length === 0 ? (
+        <div className="empty-message">
+          {equipments.length > 0 ? '条件に一致する備品がありません' : '登録されている備品がありません'}
+        </div>
       ) : (
         <div className="equipment-grid">
           {equipments.map(equipment => (

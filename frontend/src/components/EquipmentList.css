@@ -2,13 +2,105 @@
   margin: 2rem 0;
 }
 
+.equipment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .page-title {
   font-size: 1.8rem;
   color: #333;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin: 0;
 }
 
+.equipment-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.add-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-button:hover {
+  background-color: #45a049;
+}
+
+/* フィルターと検索エリア */
+.filter-search-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  min-width: 150px;
+}
+
+.search-container {
+  flex-grow: 1;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  padding-right: 2.5rem;
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-search:hover {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.filter-summary {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+/* 備品カードスタイル */
 .equipment-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -89,6 +181,7 @@
   line-height: 1.4;
 }
 
+/* カードアクション */
 .card-actions {
   display: flex;
   justify-content: flex-end;
@@ -161,4 +254,15 @@
   color: #f44336;
   background: #ffebee;
   border-radius: 8px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .filter-search-container {
+    flex-direction: column;
+  }
+  
+  .search-container {
+    width: 100%;
+  }
 }
