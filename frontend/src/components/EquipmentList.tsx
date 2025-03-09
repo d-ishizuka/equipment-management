@@ -10,7 +10,7 @@ const Equipments = () => {
   const [error, setError] = useState<string | null>(null);
 
   // フィルタリングと検索用の状態
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // 最初のレンダリング時に備品データ一覧を取得
@@ -52,7 +52,7 @@ const Equipments = () => {
     setFilteredEquipments(result)}, [equipments, statusFilter, searchTerm]); // 依存配列に変数を指定することで、その変数が変更されたときに再実行される
 
   // ステータスフィルターの変更時に呼ばれるイベントハンドラ
-  const handleStatusFileterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setStatusFilter(e.target.value);
   };
 
@@ -118,7 +118,7 @@ const Equipments = () => {
           <select
             id="status-filter"
             value={statusFilter}
-            onChange={handleStatusFileterChange}
+            onChange={handleStatusFilterChange}
             className="filter-select"
           >
             <option value="all">全て</option>
@@ -161,7 +161,7 @@ const Equipments = () => {
         </div>
       ) : (
         <div className="equipment-grid">
-          {equipments.map(equipment => (
+          {filteredEquipments.map(equipment => (
             <div key={equipment.id} className="equipment-card">
               <div className={`status-indicator ${getStatusClass(equipment.status)}`}>
                 <span className="status-label">{getStatusLabel(equipment.status)}</span>
