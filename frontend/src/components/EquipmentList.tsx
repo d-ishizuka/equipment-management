@@ -32,11 +32,13 @@ const Equipments = () => {
   }, []); // ここに空の配列を渡すことで、最初のレンダリング時のみ実行される
 
   // フィルタリングと検索の適用
-  useEffect(() => {
+  useEffect(() => {    
+    if (!equipments.length) return; // 備品データがない場合は何もしない
+    
     let result = [...equipments];
 
     // ステータスでフィルタリング
-    if (statusFilter !== 'all') {
+    if (statusFilter && statusFilter !== 'all') {
       result = result.filter(equipment => equipment.status === statusFilter);
     }
 
