@@ -280,7 +280,7 @@ const Equipments = () => {
     return (
       <div className="equipment-container">
         <h2 className="page-title">備品一覧</h2>
-        <div className="equipment-grid">
+        <div className="equipment-grid" data-testid="loading-skeleton-container">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="equipment-card skeleton"></div>
           ))}
@@ -301,6 +301,7 @@ const Equipments = () => {
           <button
             className="add-button"
             onClick={() => setShowForm(!showForm)}
+            data-testid="toggle-form-button"
           >
             { showForm? 'キャンセル' : '新規登録' }
           </button>
@@ -408,6 +409,7 @@ const Equipments = () => {
                 value={newEquipment.status}
                 onChange={handleFormChange}
                 required
+                data-testid="form-status-label"
               >
                 <option value="available">利用可能</option>
                 <option value="in_use">使用中</option>
@@ -434,6 +436,7 @@ const Equipments = () => {
                 type="button" 
                 className="cancel-button" 
                 onClick={editMode ? cancelEditing : () => setShowForm(false)}
+                data-testid="form-cancel-button"
               >
                 キャンセル
               </button>
@@ -441,6 +444,7 @@ const Equipments = () => {
                 type="submit" 
                 className="submit-button" 
                 disabled={isSubmitting}
+                data-testid="form-submit-button"
               >
                 {isSubmitting ? '送信中...' : editMode ? '更新する' : '登録する'}
               </button>
@@ -475,6 +479,7 @@ const Equipments = () => {
             onChange={handleSearchTermChange}
             placeholder="備品名、説明で検索..."
             className="search-input"
+            data-testid="search-input"
           />
           {searchTerm && (
             <button
@@ -564,6 +569,7 @@ const Equipments = () => {
                 className="cancel-button" 
                 onClick={() => setEquipmentToDelete(null)} 
                 disabled={isDeleting}
+                data-testid="delete-cancel-button"
               >
                 キャンセル
               </button>
@@ -571,6 +577,7 @@ const Equipments = () => {
                 className="delete-button" 
                 onClick={handleDelete} 
                 disabled={isDeleting}
+                data-testid="delete-confirm-button"
               >
                 {isDeleting ? '削除中...' : '削除する'}
               </button>
