@@ -28,6 +28,53 @@ const Equipments = () => {
     location: undefined,
   });
 
+  // 編集モード用の状態を追加
+  const [editMode, setEditMode] = useState(false);
+  const [editEquipmentId, setEditEquipmentId] = useState<number | null>(null);
+
+  // 編集モードを開始する関数
+  const startEditing = (equipment: Equipment) => {
+    setEditMode(true);
+    setEditEquipmentId(equipment.id || null);
+    
+    // 既存のデータをフォームにセット
+    setNewEquipment({
+      name: equipment.name,
+      serial_number: equipment.serial_number || '',
+      purchase_date: equipment.purchase_date || '',
+      purchase_price: equipment.purchase_price || 0,
+      status: equipment.status,
+      description: equipment.description || '',
+      category: equipment.category,
+      location: equipment.location
+    });
+    
+    // フォームを表示
+    setShowForm(true);
+    
+    // ページトップへスクロール（オプション）
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 編集モードをキャンセル
+  const cancelEditing = () => {
+    setEditMode(false);
+    setEditEquipmentId(null);
+    setShowForm(false);
+    
+    // フォームをリセット
+    setNewEquipment({
+      name: '',
+      serial_number: '',
+      purchase_date: '',
+      purchase_price: 0,
+      status: 'available',
+      description: '',
+      category: undefined,
+      location: undefined
+    });
+  };
+
   // 削除関連の状態を追加
   const [equipmentToDelete, setEquipmentToDelete] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -132,31 +179,49 @@ const Equipments = () => {
     setIsSubmitting(true);
 
     try {
-      // 新規作成の場合は作成API呼び出し
-      const createdEquipment = await equipmentService.create(newEquipment as Equipment);
-
-      // 備品リストを更新
-      setEquipments([...equipments, createdEquipment]);
-
+      let updatedEquipment: Equipment;
+      
+      if (editMode && editEquipmentId) {
+        // 編集モード: 既存データを更新
+        updatedEquipment = await equipmentService.update(editEquipmentId, newEquipment);
+        
+        // 備品リストを更新
+        setEquipments(equipments.map(item => 
+          item.id === editEquipmentId ? updatedEquipment : item
+        ));
+        
+        // 編集モードを終了
+        setEditMode(false);
+        setEditEquipmentId(null);
+      } else {
+        // 新規作成モード
+        const createdEquipment = await equipmentService.create(newEquipment);
+        
+        // 備品リストを更新
+        setEquipments([...equipments, createdEquipment]);
+      }
+      
       // フォームをリセット
       setNewEquipment({
         name: '',
         serial_number: '',
         purchase_date: '',
         purchase_price: 0,
+        status: 'available',
         description: '',
         category: undefined,
-        location: undefined,
+        location: undefined
       });
-
+      
+      // フォームを閉じる
       setShowForm(false);
-
+      
     } catch (err) {
-      console.error('Error creating equipment:', err);
-      alert('備品の作成に失敗しました');
+      console.error('Error saving equipment:', err);
+      alert(editMode ? '備品の更新に失敗しました' : '備品の登録に失敗しました');
     } finally {
       setIsSubmitting(false);
-    }
+    }  
   };
 
   // 削除確認を表示
@@ -242,11 +307,11 @@ const Equipments = () => {
         </div>
       </div>
 
-      {/* 新規登録フォーム */}
+      {/* 登録/新規登録フォーム */}
       {showForm && (
         <div className="equipment-form-container">
           <form onSubmit={handleSubmit} className="equipment-form"  data-testid="equipment-form">
-            <h3>備品登録</h3>
+            <h3>{editMode ? '備品編集' : '備品登録'}</h3>
 
             <div className="form-row">
               <div className="form-group">
@@ -365,19 +430,19 @@ const Equipments = () => {
             </div>
 
             <div className="form-actions">
-              <button
-                type="button"
-                className="cancel-button"
-                onClick={() => setShowForm(false)}
+              <button 
+                type="button" 
+                className="cancel-button" 
+                onClick={editMode ? cancelEditing : () => setShowForm(false)}
               >
                 キャンセル
               </button>
-              <button
-                type="submit"
-                className="submit-button"
+              <button 
+                type="submit" 
+                className="submit-button" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? '送信中...' : '登録する'}
+                {isSubmitting ? '送信中...' : editMode ? '更新する' : '登録する'}
               </button>
             </div>
           </form>
@@ -467,7 +532,12 @@ const Equipments = () => {
               
               <div className="card-actions">
                 <button className="view-button">詳細</button>
-                <button className="edit-button">編集</button>
+                <button 
+                  className="edit-button"
+                  onClick={() => startEditing(equipment)}
+                >
+                  編集
+                </button>
                 <button 
                   className="delete-button" 
                   onClick={() => equipment.id && confirmDelete(equipment.id)}
