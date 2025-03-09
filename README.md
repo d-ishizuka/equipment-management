@@ -1,6 +1,6 @@
-# django-react-project
+# equipment-management
 
-このプロジェクトは、Djangoをバックエンドに、Reactをフロントエンドに使用したウェブアプリケーションです。
+このプロジェクトは、備品管理を題材にした簡易アプリケーションです
 
 ## 構成
 
